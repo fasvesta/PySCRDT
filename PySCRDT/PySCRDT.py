@@ -427,7 +427,7 @@ class PySCRDT(object):
             if self.l=='any':
                 self.rdt_s=self.factor*self.data[:,7]*self.K/2./(2*np.pi)*(np.sqrt(2*self.data[:,1])**abs(self.h+self.i))*(np.sqrt(2*self.data[:,2])**abs(self.j+self.k))*self.f(self.sx,self.sy,self.parameters['dpp']*self.data[:,3])*np.exp(1j*2*np.pi*((self.h-self.i)*self.data[:,5]+(self.j-self.k)*self.data[:,6]))
             else:
-                self.rdt_s=self.data[:,7]*self.factor*self.K/2./(2*np.pi)*(np.sqrt(2*self.data[:,1])**abs(self.h+self.i))*(np.sqrt(2*self.data[:,2])**abs(self.j+self.k))*self.f(self.sx,self.sy,self.parameters['Dpp']*self.data[:,3])*np.exp(1j*((self.h-self.i)*2*np.pi*self.data[:,5]+(self.j-self.k)*2*np.pi*self.data[:,6]+(self.l-(self.h-self.i)*self.actualQx-(self.j-self.k)*self.actualQy)*2*np.pi*self.data[:,0]/self.parameters['C']))
+                self.rdt_s=self.data[:,7]*self.factor*self.K/2./(2*np.pi)*(np.sqrt(2*self.data[:,1])**abs(self.h+self.i))*(np.sqrt(2*self.data[:,2])**abs(self.j+self.k))*self.f(self.sx,self.sy,self.parameters['dpp']*self.data[:,3])*np.exp(1j*((self.h-self.i)*2*np.pi*self.data[:,5]+(self.j-self.k)*2*np.pi*self.data[:,6]+(self.l-(self.h-self.i)*self.actualQx-(self.j-self.k)*self.actualQy)*2*np.pi*self.data[:,0]/self.parameters['C']))
         self.rdt=sum(self.rdt_s)
 
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
