@@ -3,8 +3,9 @@
 #
 #   PySCRDT
 #   A module to calculate the resonance driving terms from the space charge potential
-#
-#   Version : 1.0
+#   
+#   Version :   1.1 
+#               pre-calculated potentials for faster evaluation
 #   Author  : F. Asvesta
 #   Contact : fasvesta .at. cern .dot. ch
 #
@@ -20,9 +21,13 @@ try:
     import sympy as sy
 except ImportError:
     print("# PySCRDT : sympy module is required. ")
+try:
+    import dill
+except ImportError:
+    print("# PySCRDT : dill module is required. ")
 
-__version   = 1.0
-__PyVersion = ["2.7", "3.6+"]
+__version   = 1.1
+__PyVersion = ["2.7"]
 __author    = ["Foteini Asvesta"]
 __contact   = ["fasvesta .at. cern .dot. ch"]
 
@@ -166,7 +171,7 @@ class PySCRDT(object):
         self.factor_d=None
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
-    def setParameters(self, intensity=41e10, bunchLength=5.96, ro=1.5347e-18, emittance_x=2e-6, emittance_y=1.1e-6, dpp_rms=0.5e-3, dpp=0.0):
+    def setParameters(self, intensity=41e10, bunchLength=5.96, ro=1.5347e-18, emittance_x=2e-6, emittance_y=1.1e-6, dpp_rms=0.5e-3, dpp=0.0, bF=None, harmonic=1):
         """
         Sets the parameters for the calculation:
         Input :  intensity  : [float] bunch intensity in ppb (Default=41e10)
@@ -176,6 +181,8 @@ class PySCRDT(object):
                  emittance_y: [float] normalized vertical emittance in m*rad (Default=1.1e-6)
                  dpp_rms    : [float] RMS Dp/p (Default=0.5e-3)
                  dpp        : [float] Single particle Dp/p (Default=0)
+                 bF         : [float] Bunching factor (Default=None)
+                 harmonic   : [int]   Harmonic number,# of buckets (Default=1)
         Returns: void
         """
         self.parameters={'intensity':intensity, 
@@ -184,7 +191,9 @@ class PySCRDT(object):
                          'emittance_x':emittance_x, 
                          'emittance_y':emittance_y,
                          'dpp_rms':dpp_rms,
-                         'dpp':dpp}
+                         'dpp':dpp,
+                         'bF':bF,
+                         'harmonic':harmonic}
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
     def readParameters(self, inputFile):
@@ -197,6 +206,8 @@ class PySCRDT(object):
                       emittance_y = [float] # normalized vertical emittance in m*rad (Default=1.1e-6)
                       dpp_rms     = [float] # RMS Dp/p (Default=0.5e-3)
                       dpp         = [float] # Single particle Dp/p (Default=0.5e-3)
+                      bF          = [float] # Bunching factor (Default=None)
+                      harmonic    = [int]   # Harmonic number,# of buckets (Default=1)
         Returns: void
         """
         params=np.genfromtxt(inputFile,dtype=str)
@@ -235,37 +246,44 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders without Dp/p (order given {}), change the order in [setOrder]'.format(str(self.m)))
         if self.n%2!=0:
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders (order given {}), change the order in [setOrder]'.format(str(self.n)))
-        V = (-1+sy.exp(-self.x**2/(self.t+2*self.a**2)-self.y**2/(self.t+2*self.b**2)))/sy.sqrt((self.t+2*self.a**2)*(self.t+2*self.b**2))
-        if self.m>self.n:
-            if feedDown:
-                p1 = sy.series(V, self.x, 0, abs(self.m)+2).removeO()
-            else:    
-                p1 = sy.series(V, self.x, 0, abs(self.m)+1).removeO()
-            p2 = sy.series(p1, self.y, 0, abs(self.n)+1).removeO()
-            termy = sy.collect(p2, self.y, evaluate=False)
-            termpowy=termy[self.y**abs(self.n)]
-            if feedDown:
-                termpowy=sy.expand(termpowy.subs(self.x,self.x+self.D))
-            termx = sy.collect(termpowy, self.x, evaluate=False)
-            termpowx=termx[self.x**abs(self.m)]
-            sterm=sy.simplify(termpowx)
+        if (self.m+self.n < 20) or (self.m !=self.n):
+            with open('potentialsFull','rb') as f:                                    
+                a=dill.load(f)
+            a=np.array(a)
+            a=a[np.where(a[:,0]==self.m)[0]]
+            self.f=a[np.where(a[:,1]==self.n)][0][2]
         else:
-            p1 = sy.series(V, self.y, 0, abs(self.n)+1).removeO()
-            if feedDown:
-                p2 = sy.series(p1, self.x, 0, abs(self.m)+2).removeO()
-            else:    
-                p2 = sy.series(p1, self.x, 0, abs(self.m)+1).removeO()
-            termx = sy.collect(p2, self.x, evaluate=False)
-            if feedDown:
-                termx=sy.expand(termx.subs(self.x,self.x+self.D))
-            termpowx=termx[self.x**abs(self.m)]
-            termy = sy.collect(termpowx, self.y, evaluate=False)
-            termpowy=termy[self.y**abs(self.n)]
-            sterm=sy.simplify(termpowy)
-        res = sy.integrate(sterm, (self.t, 0, sy.oo)).doit()
-        result=res.doit()
-        self.V = sy.simplify(result)
-        self.f=sy.lambdify((self.a,self.b,self.D),self.V)
+            V = (-1+sy.exp(-self.x**2/(self.t+2*self.a**2)-self.y**2/(self.t+2*self.b**2)))/sy.sqrt((self.t+2*self.a**2)*(self.t+2*self.b**2))
+            if self.m>self.n:
+                if feedDown:
+                    p1 = sy.series(V, self.x, 0, abs(self.m)+2).removeO()
+                else:    
+                    p1 = sy.series(V, self.x, 0, abs(self.m)+1).removeO()
+                p2 = sy.series(p1, self.y, 0, abs(self.n)+1).removeO()
+                termy = sy.collect(p2, self.y, evaluate=False)
+                termpowy=termy[self.y**abs(self.n)]
+                if feedDown:
+                    termpowy=sy.expand(termpowy.subs(self.x,self.x+self.D))
+                termx = sy.collect(termpowy, self.x, evaluate=False)
+                termpowx=termx[self.x**abs(self.m)]
+                sterm=sy.simplify(termpowx)
+            else:
+                p1 = sy.series(V, self.y, 0, abs(self.n)+1).removeO()
+                if feedDown:
+                    p2 = sy.series(p1, self.x, 0, abs(self.m)+2).removeO()
+                else:    
+                    p2 = sy.series(p1, self.x, 0, abs(self.m)+1).removeO()
+                termx = sy.collect(p2, self.x, evaluate=False)
+                if feedDown:
+                    termx=sy.expand(termx.subs(self.x,self.x+self.D))
+                termpowx=termx[self.x**abs(self.m)]
+                termy = sy.collect(termpowx, self.y, evaluate=False)
+                termpowy=termy[self.y**abs(self.n)]
+                sterm=sy.simplify(termpowy)
+            res = sy.integrate(sterm, (self.t, 0, sy.oo)).doit()
+            result=res.doit()
+            self.V = sy.simplify(result)
+            self.f=sy.lambdify((self.a,self.b,self.D),self.V)
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
@@ -278,7 +296,10 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::ksc: You need to define parameters in [setParameters]')
         if self.data is None:
             raise IOError('# PySCRDT::ksc: You need to define Madx twiss file in [prepareData]')
-        self.K=2*self.parameters['intensity']*self.parameters['ro']/(np.sqrt(2*np.pi)*self.parameters['bunchLength']*self.parameters['b']**2*self.parameters['g']**3)
+        if self.parameters['bF']:
+            self.K= 2*self.parameters['intensity']*self.parameters['ro']*(self.parameters['harmonic']/self.parameters['bF'])/(self.parameters['C']*self.parameters['b']**2*self.parameters['g']**3)
+        else:
+            self.K= 2*self.parameters['intensity']*self.parameters['ro']/(np.sqrt(2*np.pi)*self.parameters['bunchLength']*self.parameters['b']**2*self.parameters['g']**3)
     
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
@@ -318,9 +339,15 @@ class PySCRDT(object):
             elif params[i[0]][1]=='Q2':
                 self.actualQy=float(params[i[0]][3])
         header=np.genfromtxt(twissFile,skip_header=45,max_rows=1,dtype=str)
-        data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
         s = np.linspace(0,self.parameters['C'],100000)
-        data2=np.zeros((100000,8))
+        try:
+            data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1,np.where(header=='ALFX')[0][0]-1,np.where(header=='ALFY')[0][0]-1))
+            data2=np.zeros((100000,10))
+            data2[:,8] = np.interp(s,data[:,0],data[:,8])
+            data2[:,9] = np.interp(s,data[:,0],data[:,9])
+        except:
+            data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
+            data2=np.zeros((100000,8))
         data2[:,1] = np.square(np.interp(s,data[:,0],np.sqrt(data[:,1])))
         data2[:,2] = np.square(np.interp(s,data[:,0],np.sqrt(data[:,2])))
         data2[:,3] = np.interp(s,data[:,0],self.parameters['b']*data[:,3])
@@ -465,6 +492,8 @@ class PySCRDT(object):
                          'dpp'
                          'b'
                          'g'
+                         'bF'
+                         'harmonic'
         Returns: void
         """
         if kwargs is not None:
