@@ -166,7 +166,7 @@ class PySCRDT(object):
         self.factor_d=None
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
-    def setParameters(self, intensity=41e10, bunchLength=5.96, ro=1.5347e-18, emittance_x=2e-6, emittance_y=1.1e-6, dpp_rms=0.5e-3, dpp=0.0):
+    def setParameters(self, intensity=41e10, bunchLength=5.96, ro=1.5347e-18, emittance_x=2e-6, emittance_y=1.1e-6, dpp_rms=0.5e-3, dpp=0.0, bF=None, harmonic=1):
         """
         Sets the parameters for the calculation:
         Input :  intensity  : [float] bunch intensity in ppb (Default=41e10)
@@ -176,6 +176,8 @@ class PySCRDT(object):
                  emittance_y: [float] normalized vertical emittance in m*rad (Default=1.1e-6)
                  dpp_rms    : [float] RMS Dp/p (Default=0.5e-3)
                  dpp        : [float] Single particle Dp/p (Default=0)
+                 bF         : [float] Bunching factor (Default=None)
+                 harmonic   : [int]   Harmonic number,# of buckets (Default=1)
         Returns: void
         """
         self.parameters={'intensity':intensity, 
@@ -184,7 +186,9 @@ class PySCRDT(object):
                          'emittance_x':emittance_x, 
                          'emittance_y':emittance_y,
                          'dpp_rms':dpp_rms,
-                         'dpp':dpp}
+                         'dpp':dpp,
+                         'bF':bF,
+                         'harmonic':harmonic}
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
     def readParameters(self, inputFile):
@@ -197,6 +201,8 @@ class PySCRDT(object):
                       emittance_y = [float] # normalized vertical emittance in m*rad (Default=1.1e-6)
                       dpp_rms     = [float] # RMS Dp/p (Default=0.5e-3)
                       dpp         = [float] # Single particle Dp/p (Default=0.5e-3)
+                      bF          = [float] # Bunching factor (Default=None)
+                      harmonic    = [int]   # Harmonic number,# of buckets (Default=1)
         Returns: void
         """
         params=np.genfromtxt(inputFile,dtype=str)
@@ -216,7 +222,7 @@ class PySCRDT(object):
         if self.data is not None:
             self.beamSize()
             self.ksc()
-            
+                        
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
     
@@ -278,7 +284,10 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::ksc: You need to define parameters in [setParameters]')
         if self.data is None:
             raise IOError('# PySCRDT::ksc: You need to define Madx twiss file in [prepareData]')
-        self.K=2*self.parameters['intensity']*self.parameters['ro']/(np.sqrt(2*np.pi)*self.parameters['bunchLength']*self.parameters['b']**2*self.parameters['g']**3)
+        if self.parameters['bF']:
+            self.K= 2*self.parameters['intensity']*self.parameters['ro']*(self.parameters['harmonic']/self.parameters['bF'])/(self.parameters['C']*self.parameters['b']**2*self.parameters['g']**3)
+        else:
+            self.K= 2*self.parameters['intensity']*self.parameters['ro']/(np.sqrt(2*np.pi)*self.parameters['bunchLength']*self.parameters['b']**2*self.parameters['g']**3)
     
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
@@ -452,8 +461,7 @@ class PySCRDT(object):
         self.rdt_d=sum(self.rdt_s_d)
 
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
-
-    def updateParameters(self,**kwargs):
+   def updateParameters(self,**kwargs):
         """
         Updates the parameter dictionary
         Input :  any of  'intensity' 
@@ -465,6 +473,8 @@ class PySCRDT(object):
                          'dpp'
                          'b'
                          'g'
+                         'bF'
+                         'harmonic'
         Returns: void
         """
         if kwargs is not None:
