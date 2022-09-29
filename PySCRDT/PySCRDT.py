@@ -461,7 +461,8 @@ class PySCRDT(object):
         self.rdt_d=sum(self.rdt_s_d)
 
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
-   def updateParameters(self,**kwargs):
+    
+    def updateParameters(self,**kwargs):
         """
         Updates the parameter dictionary
         Input :  any of  'intensity' 
