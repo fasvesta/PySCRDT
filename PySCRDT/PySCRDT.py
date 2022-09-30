@@ -246,13 +246,26 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders without Dp/p (order given {}), change the order in [setOrder]'.format(str(self.m)))
         if self.n%2!=0:
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders (order given {}), change the order in [setOrder]'.format(str(self.n)))
-        if (self.m+self.n < 20) or (self.m !=self.n):
-            with open('potentialsFull','rb') as f:                                    
-                a=dill.load(f)
-            a=np.array(a)
-            a=a[np.where(a[:,0]==self.m)[0]]
-            self.f=a[np.where(a[:,1]==self.n)][0][2]
-        else:
+        trying=False
+        if (self.m+self.n < 21) and feedDown==False:
+            trying=True
+            try:
+                with open('./PySCRDT/potentialsPy3','rb') as f:                                    
+                    a=dill.load(f)
+                a=np.array(a)
+                a=a[np.where(a[:,0]==self.m)[0]]
+                self.f=a[np.where(a[:,1]==self.n)][0][2]
+            except:
+                try:
+                    with open('./PySCRDT/potentialsPy2','rb') as f:                                    
+                        a=dill.load(f)
+                    a=np.array(a)
+                    a=a[np.where(a[:,0]==self.m)[0]]
+                    self.f=a[np.where(a[:,1]==self.n)][0][2]
+                except:
+                    trying=False     
+                    print('# PySCRDT::potential: Calculating potential')  
+        if trying==False:
             V = (-1+sy.exp(-self.x**2/(self.t+2*self.a**2)-self.y**2/(self.t+2*self.b**2)))/sy.sqrt((self.t+2*self.a**2)*(self.t+2*self.b**2))
             if self.m>self.n:
                 if feedDown:
