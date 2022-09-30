@@ -249,7 +249,7 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders (order given {}), change the order in [setOrder]'.format(str(self.n)))
         if (self.m+self.n < 21) and (feedDown==False) and (lookUp==True):
             try:
-                with open(__file__[:__file__.find('PySCRDT.py')]+'pot','rb') as f:                                    
+                with open(__file__[:__file__.find('PySCRDT.py')]+'potentialsPy3','rb') as f:                                    
                     a=dill.load(f)
                 a=np.array(a)
                 a=a[np.where(a[:,0]==self.m)[0]]
