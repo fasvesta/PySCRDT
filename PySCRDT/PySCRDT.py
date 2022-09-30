@@ -26,6 +26,7 @@ try:
 except ImportError:
     print("# PySCRDT : dill module is required. ")
 
+
 __version   = 1.1
 __PyVersion = ["2.7"]
 __author    = ["Foteini Asvesta"]
@@ -250,14 +251,14 @@ class PySCRDT(object):
         if (self.m+self.n < 21) and feedDown==False:
             trying=True
             try:
-                with open('./PySCRDT/potentialsPy3','rb') as f:                                    
+                with open(__file__[:__file__.find('PySCRDT.py')]+'potentialsPy3','rb') as f:                                    
                     a=dill.load(f)
                 a=np.array(a)
                 a=a[np.where(a[:,0]==self.m)[0]]
                 self.f=a[np.where(a[:,1]==self.n)][0][2]
             except:
                 try:
-                    with open('./PySCRDT/potentialsPy2','rb') as f:                                    
+                    with open(__file__[:__file__.find('PySCRDT.py')]+'potentialsPy2','rb') as f:                                    
                         a=dill.load(f)
                     a=np.array(a)
                     a=a[np.where(a[:,0]==self.m)[0]]
