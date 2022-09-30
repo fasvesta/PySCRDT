@@ -232,7 +232,7 @@ class PySCRDT(object):
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
     
-    def potential(self, feedDown=False):
+    def potential(self, feedDown=False, lookUp=True):
         """
         Calculates the space charge potential for the given resonance order
         Inputs : feedDown : [bool] needed when single particle Dp/p non 0 (default=False)
@@ -243,15 +243,13 @@ class PySCRDT(object):
             self.n=self.j+self.k
         if (self.m is None) or (self.n is None):
             raise IOError('# PySCRDT::potential: You need to define resonance order in [setOrder]')
-        if self.m%2!=0 and feedDown==False:
+        if self.m%2!=0 and (feedDown==False):
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders without Dp/p (order given {}), change the order in [setOrder]'.format(str(self.m)))
         if self.n%2!=0:
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders (order given {}), change the order in [setOrder]'.format(str(self.n)))
-        trying=False
-        if (self.m+self.n < 21) and feedDown==False:
-            trying=True
+        if (self.m+self.n < 21) and (feedDown==False) and (lookUp==True):
             try:
-                with open(__file__[:__file__.find('PySCRDT.py')]+'potentialsPy3','rb') as f:                                    
+                with open(__file__[:__file__.find('PySCRDT.py')]+'pot','rb') as f:                                    
                     a=dill.load(f)
                 a=np.array(a)
                 a=a[np.where(a[:,0]==self.m)[0]]
@@ -264,9 +262,9 @@ class PySCRDT(object):
                     a=a[np.where(a[:,0]==self.m)[0]]
                     self.f=a[np.where(a[:,1]==self.n)][0][2]
                 except:
-                    trying=False     
+                    lookUp=False     
                     print('# PySCRDT::potential: Calculating potential')  
-        if trying==False:
+        if (self.m+self.n > 21) or (feedDown==True) or (lookUp==False):
             V = (-1+sy.exp(-self.x**2/(self.t+2*self.a**2)-self.y**2/(self.t+2*self.b**2)))/sy.sqrt((self.t+2*self.a**2)*(self.t+2*self.b**2))
             if self.m>self.n:
                 if feedDown:
