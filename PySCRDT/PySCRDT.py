@@ -509,7 +509,7 @@ class PySCRDT(object):
         Returns: void
         """
         if kwargs is not None:
-            for key, value in kwargs.iteritems():
+            for key, value in kwargs.items():
                 if key not in self.parameters.keys():
                     raise IOError('# PySCRDT::updateParameters: '+key+' not recognized [checkWriting]')
                 else:
