@@ -30,7 +30,7 @@ REQUIREMENTS: dict = {
 
 
 setup(
-    name='acc_lib',
+    name='PySCRDT',
     version=VERSION,
     author='Foteini Asvesta',
     author_email='fasvesta .at. cern .dot. ch',
