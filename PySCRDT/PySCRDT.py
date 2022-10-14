@@ -32,7 +32,7 @@ class PySCRDT(object):
     Returns: PySCRDT instance
     """
 
-    def __init__(self, parameters=False, mode=None, twissFile=None, order=None):
+    def __init__(self, parameters=False, mode=None, twissFile=None, order=None, twissTableXsuite=None):
         """
         Initialization function
         Input :  parameters : [bool|str]  Parameters needed for the calculations (default=False)
@@ -69,7 +69,10 @@ class PySCRDT(object):
                 self.parameters=None
                 print("# PySCRDT : Set parameters with function [setParameters] or read parameters with [readParameters]")
         if twissFile is None:
-            print("# PySCRDT : Import Madx twiss file using the function [prepareData]")
+            if twissTableXsuite is None:
+                print("# PySCRDT : Import Madx twiss file using the function [prepareData] or X-suite Twiss from method [twissTableXsuite]")
+            else:
+                self.loadTwissFromXsuite(twissTableXsuite)
         else:
             self.prepareData(twissFile)            
         if (order is None) and (mode is None):
@@ -336,6 +339,45 @@ class PySCRDT(object):
         data2[:,4] = np.interp(s,data[:,0],self.parameters['b']*data[:,4])
         data2[:,5] = np.interp(s,data[:,0],data[:,5])
         data2[:,6] = np.interp(s,data[:,0],data[:,6])
+        data2[:,7] += self.parameters['C']/len(s)
+        data2[:,0] = s
+        self.data=data2
+        self.beamSize()
+        self.ksc()
+        
+    def loadTwissFromXsuite(self, twissTableXsuite):
+        """
+        Instead of using a MADX Twiss file, load Twiss data generated from X-suite tracker
+        including at least {s, betx, bety, dx, dy, mux, muy, l}
+        Inputs : twissTableXsuite : [dict] twiss table (default=None)
+        Returns: Void
+        
+        Just like prepareData method, increases resolution of Twiss table by interpolation
+        """
+        if twissTableXsuite is None:
+            raise IOError('# PySCRDT::loadTwissFromXsuite: You need to define Xsuite twiss table in [loadTwissFromXsuite]')
+        if self.parameters is None:
+            raise IOError('# PySCRDT::loadTwissFromXsuite: You need to define parameters in [setParameters]')
+        if not isinstance(twissTableXsuite, dict):
+            raise IOError('Twiss table must be X-track dictionary')
+            
+        # Define parameters from Twiss table
+        self.parameters['g'] = twissTableXsuite['particle_on_co'].gamma0[0]
+        self.parameters['b'] = twissTableXsuite['particle_on_co'].beta0[0]
+        self.parameters['C'] = twissTableXsuite['circumference']
+        self.parameters['Q1'] = twissTableXsuite['qx']
+        self.parameters['Q2'] = twissTableXsuite['qy']
+        
+        # Set up data for increased resolution by interpolation
+        columns = ['s', 'betx', 'bety', 'dx', 'dy', 'mux', 'muy', 'l']
+        s = np.linspace(0,self.parameters['C'],100000)
+        data2=np.zeros((100000,8))
+        data2[:,1] = np.square(np.interp(s, twissTableXsuite['s'], np.sqrt(twissTableXsuite['betx'])))
+        data2[:,2] = np.square(np.interp(s, twissTableXsuite['s'], np.sqrt(twissTableXsuite['bety'])))
+        data2[:,3] = np.interp(s, twissTableXsuite['s'], self.parameters['b']*twissTableXsuite['dx'])
+        data2[:,4] = np.interp(s, twissTableXsuite['s'], self.parameters['b']*twissTableXsuite['dy'])
+        data2[:,5] = np.interp(s, twissTableXsuite['s'], twissTableXsuite['mux'])
+        data2[:,6] = np.interp(s, twissTableXsuite['s'], twissTableXsuite['muy'])
         data2[:,7] += self.parameters['C']/len(s)
         data2[:,0] = s
         self.data=data2
