@@ -365,11 +365,11 @@ class PySCRDT(object):
         self.parameters['g'] = twissTableXsuite['particle_on_co'].gamma0[0]
         self.parameters['b'] = twissTableXsuite['particle_on_co'].beta0[0]
         self.parameters['C'] = twissTableXsuite['circumference']
-        self.parameters['Q1'] = twissTableXsuite['qx']
-        self.parameters['Q2'] = twissTableXsuite['qy']
+        self.actualQx = twissTableXsuite['qx']
+        self.actualQy = twissTableXsuite['qy']
         
         # Set up data for increased resolution by interpolation
-        columns = ['s', 'betx', 'bety', 'dx', 'dy', 'mux', 'muy', 'l']
+        #columns = ['s', 'betx', 'bety', 'dx', 'dy', 'mux', 'muy', 'l']
         s = np.linspace(0,self.parameters['C'],100000)
         data2=np.zeros((100000,8))
         data2[:,1] = np.square(np.interp(s, twissTableXsuite['s'], np.sqrt(twissTableXsuite['betx'])))
