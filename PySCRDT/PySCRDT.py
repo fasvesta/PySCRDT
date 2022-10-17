@@ -308,7 +308,7 @@ class PySCRDT(object):
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
-    def prepareData(self,twissFile): 
+    def prepareData(self,twissFile, skip_header_nr=45, skip_rows_nr=47): 
         """
         Prepares the data from a MADX Twiss file including at least {s, betx, bety, dx, dy, mux, muy, l}
         Inputs : twissFile : [str] twiss file (default=None)
@@ -329,7 +329,7 @@ class PySCRDT(object):
                 self.actualQx=float(params[i[0]][3])
             elif params[i[0]][1]=='Q2':
                 self.actualQy=float(params[i[0]][3])
-        header=np.genfromtxt(twissFile,skip_header=45,max_rows=1,dtype=str)
+        header=np.genfromtxt(twissFile,skip_header=45,max_rows=1,dtype=str)   # 45 originally, below 47
         data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
         s = np.linspace(0,self.parameters['C'],100000)
         data2=np.zeros((100000,8))
