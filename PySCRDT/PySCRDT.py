@@ -329,8 +329,8 @@ class PySCRDT(object):
                 self.actualQx=float(params[i[0]][3])
             elif params[i[0]][1]=='Q2':
                 self.actualQy=float(params[i[0]][3])
-        header=np.genfromtxt(twissFile,skip_header=45,max_rows=1,dtype=str)   # 45 originally, below 47
-        data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
+        header=np.genfromtxt(twissFile,skip_header=skip_header_nr,max_rows=1,dtype=str)   # 45 originally, below 47
+        data=np.loadtxt(twissFile,skiprows=skip_rows_nr,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
         s = np.linspace(0,self.parameters['C'],100000)
         data2=np.zeros((100000,8))
         data2[:,1] = np.square(np.interp(s,data[:,0],np.sqrt(data[:,1])))
