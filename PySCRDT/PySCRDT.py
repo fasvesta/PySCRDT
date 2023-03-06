@@ -308,7 +308,7 @@ class PySCRDT(object):
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
-    def prepareData(self,twissFile, skip_header_nr=45, skip_rows_nr=47): 
+    def prepareData(self,twissFile): 
         """
         Prepares the data from a MADX Twiss file including at least {s, betx, bety, dx, dy, mux, muy, l}
         Inputs : twissFile : [str] twiss file (default=None)
@@ -318,6 +318,13 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::prepareData: You need to define Madx twiss file in [prepareData]')
         if self.parameters is None:
             raise IOError('# PySCRDT::prepareData: You need to define parameters in [setParameters]')
+        with open(twissFile, 'r') as f:
+            for line in enumerate(f.readlines()):
+                if line[1][0]=='*':
+                    skip_header_nr = line[0]
+                elif line[1][0]=='$':
+                    skip_rows_nr = line[0]+1
+                    break
         params=np.genfromtxt(twissFile,max_rows=40,dtype=str)
         for i in enumerate(params):
             if params[i[0]][1]=='GAMMA':
