@@ -1,6 +1,5 @@
 import numpy as np
 import pylab as plt
-#plt.style.use('classic')
 import matplotlib
 matplotlib.rcParams['mathtext.fontset'] = 'dejavuserif' #'dejavusans'
 matplotlib.rcParams['mathtext.rm'] = 'dejavuserif' #'sans'

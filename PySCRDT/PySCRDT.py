@@ -389,8 +389,6 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::loadTwissFromXsuite: You need to define Xsuite twiss table in [loadTwissFromXsuite]')
         if self.parameters is None:
             raise IOError('# PySCRDT::loadTwissFromXsuite: You need to define parameters in [setParameters]')
-        if not isinstance(twissTableXsuite, dict):
-            raise IOError('Twiss table must be X-track dictionary')
             
         # Define parameters from Twiss table
         self.parameters['g'] = twissTableXsuite['particle_on_co'].gamma0[0]
