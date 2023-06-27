@@ -23,6 +23,9 @@ plt.rc('legend', fontsize=SMALL_SIZE)   # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 class tune_footprint_maker(object):
+    """
+    Class to generate tune footprints 
+    """ 
     def __init__(self,
                  Qh,
                  Qv,
@@ -44,7 +47,7 @@ class tune_footprint_maker(object):
         
     def calculate_detuning_coefficients(self, PySCRDT_object):
         """
-        caclulate detuning coefficients using potentials up to 20th order (needed for up to 3 sigma particles)
+        Caclulate detuning coefficients using potentials up to 20th order (needed for up to 3 sigma particles) from PySCRDT class
         """
         detuning=[]
         # order in x
@@ -64,6 +67,20 @@ class tune_footprint_maker(object):
     
 
     def initial_xy_polar(self, s_max, s_N, theta_N):
+        """
+        Generate a grid of polar coordinates 
+
+        Parameters
+        ----------
+        s_max : maximum value of the radial coordinate
+        s_N : number of subdivisions for the radial coordinate
+        theta_N : number of subdivisions for the angular coordinate
+
+        Returns
+        -------
+        numpy array with tuples representing the Cartesian coordinates from the grid of polar coordinates 
+        """
+        
         return np.array(
             [
                 [(s*np.cos(theta), s*np.sin(theta)) for s in np.linspace(0, s_max, s_N+1)]
@@ -72,24 +89,38 @@ class tune_footprint_maker(object):
 
 
     def make_polygons_for_footprint(self, PySCRDT_object, s_N=6, s_max=3, theta_N=5):
+        """
+        Generate polygons for plotting using matplotlib
 
+        Parameters
+        ----------
+        PySCRDT_object
+        s_max : maximum value of the radial coordinate. The default is 6.
+        s_N : number of subdivisions for the radial coordinate. The default is 3.
+        theta_N : number of subdivisions for the angular coordinate. The default is 5.
+        
+        Returns
+        -------
+        None
+        """
         if not self.detuning_is_calculated:
             self.calculate_detuning_coefficients(PySCRDT_object)
 
         #  initialize grid for calculation
         S = self.initial_xy_polar(s_max=s_max, s_N=s_N, theta_N=theta_N)
         
+        # Beam parameters and action-angle variables 
+        en_x = PySCRDT_object.parameters['emittance_x']
+        en_y = PySCRDT_object.parameters['emittance_y']
+        beta = PySCRDT_object.parameters['b']
+        gamma = PySCRDT_object.parameters['g']
+        J_x = S[:,:,0]**2*en_x/2./beta/gamma
+        J_y = S[:,:,1]**2*en_y/2./beta/gamma
         
-        en_x=PySCRDT_object.parameters['emittance_x']
-        en_y=PySCRDT_object.parameters['emittance_y']
-        beta=PySCRDT_object.parameters['b']
-        gamma=PySCRDT_object.parameters['g']
-        J_x=S[:,:,0]**2*en_x/2./beta/gamma
-        J_y=S[:,:,1]**2*en_y/2./beta/gamma
+        Qx, Qy = self.Qh, self.Qv 
         
-        Qx,Qy = self.Qh, self.Qv 
-        
-        for x_q,y_q,detuning_coef in self.detuning:
+        # Updated tunes from calculated detuning coefficients 
+        for x_q, y_q, detuning_coef in self.detuning:
             if x_q:
                 Qx+=x_q/2.*detuning_coef*(J_x**(x_q/2.-1))*(J_y**(y_q/2.))
             if y_q:
@@ -105,6 +136,7 @@ class tune_footprint_maker(object):
         Q[:,:,0] += 0.00
         Q[:,:,1] += 0.00
         
+        # reshapes the Q array to form four sets of points, p1, p2, p3, and p4, which represent the vertices of the polygons.
         sx = Q.shape[0]-1
         sy = Q.shape[1]-1
         p1 = Q[:-1, :-1, :].reshape(sx*sy, 2)[:, :]
@@ -112,8 +144,7 @@ class tune_footprint_maker(object):
         p3 = Q[1:, 1:, :].reshape(sx*sy, 2)[:]
         p4 = Q[:-1, 1:, :].reshape(sx*sy, 2)[:]
         
-        
-        # do the plotting
+        # colormap for plotting 
         cmap_base = plt.cm.hot
         c_indcs = np.int_(np.linspace(0.1,0.6,s_N+1)*cmap_base.N)
         cmap = colors.ListedColormap([cmap_base(c_indx) for c_indx in c_indcs])
@@ -122,17 +153,27 @@ class tune_footprint_maker(object):
         Polygons = np.transpose(np.stack((p1, p2, p3, p4)), (1, 0, 2))
         patches = list(map(matplotlib.patches.Polygon, Polygons))
         self.p_collection = matplotlib.collections.PatchCollection(
-        #     patches, edgecolor='grey', linewidth=1,
             patches, edgecolor='k', linewidth=0.5,
-        #     facecolors=[],
             facecolors=cmap.colors,
-        #     facecolors=['SkyBlue'],
             alpha=0.7
         )
         self.p_collection_exists = True 
         
         
     def generate_tune_footprint(self, fig, PySCRDT_object, return_fig_axis=False):
+        """
+        Generate tune footprint figure from PySCRDT 
+
+        Parameters
+        ----------
+        fig : matplotlib figure object
+        PySCRDT_object 
+        return_fig_axis : default is False.
+
+        Returns
+        -------
+        ax : figure object axis for additional plotting, if desirede 
+        """
     
         if not self.p_collection_exists:
             self.make_polygons_for_footprint(PySCRDT_object)
@@ -151,7 +192,6 @@ class tune_footprint_maker(object):
         ax.set_ylabel(r'$Q_{y}$', fontsize=BIGGER_SIZE)
         ax.set_xlabel(r'$Q_{x}$', fontsize=BIGGER_SIZE)
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-        #plt.savefig(input_parameters.figure, dpi=250)
         plt.show()
         
         if return_fig_axis:
