@@ -1,0 +1,11 @@
+LICENSE
+README.md
+setup.py
+PySCRDT/PySCRDT.py
+PySCRDT/__init__.py
+PySCRDT/resonance_lines.py
+PySCRDT.egg-info/PKG-INFO
+PySCRDT.egg-info/SOURCES.txt
+PySCRDT.egg-info/dependency_links.txt
+PySCRDT.egg-info/requires.txt
+PySCRDT.egg-info/top_level.txt

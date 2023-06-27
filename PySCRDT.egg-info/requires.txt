@@ -1,0 +1,16 @@
+numpy
+sympy
+
+[all]
+numpy
+sympy
+
+[core]
+numpy
+sympy
+
+[dev]
+
+[doc]
+
+[test]

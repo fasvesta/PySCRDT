@@ -1,6 +1,6 @@
 """
-#  PySCRDT - simple example to generate tune footprint with the PS
-#  
+#  Simple tune footprint maker example with PySCRDT to generate tune footprint
+#  with Pb ions in the PS
 #  example by Elias Waagaard 
 """
 import matplotlib.pyplot as plt
@@ -25,28 +25,25 @@ nemitt_x= 0.8e-6
 nemitt_y= 0.5e-6 
 
 #### Analytical tune footprint settings ###
-Qh = 6.210000511153454
-Qv = 6.24499998913536
-plot_range  =   [[5.95,6.3],[5.95,6.3]]   # range in Qh & Qv for the plot
-plot_order  =   5   # order of resonances to plot
-periodicity =   16  # periodicity of ring for the colorcode of the plot
+Qh = twiss_xtrack['qx']
+Qv = twiss_xtrack['qy']
+#plot_range  =   [[5.95,6.3],[5.95,6.3]]   # plot range in Qh & Qv, can be custom-provided to tune_footprint_maker
 
-
-#### Create instance of PySCRDT, taking normalized emittances as input ####
+#### Create instance of PySCRDT, taking beam parameters as input ####
 s = PySCRDT()
 s.setParameters(
     intensity = bunch_intensity,
     bunchLength = sigma_z,
     emittance_x = nemitt_x,
     emittance_y = nemitt_y, 
-    dpp_rms = 1e-3,  # very small contribution anyway to beam size
+    dpp_rms = 1e-3, 
     bF=None,
     ro = particle_ref.get_classical_particle_radius0() 
 )
 s.loadTwissFromXsuite(twissTableXsuite=twiss_xtrack)
 
 #### Initiate tune footprint maker ####
-PS_tune_footprint = tune_footprint_maker(Qh, Qv, plot_range = plot_range)
+PS_tune_footprint = tune_footprint_maker(Qh, Qv)
 
 #### Plot the tune footprint ####
 fig = plt.figure(figsize=(8, 8))

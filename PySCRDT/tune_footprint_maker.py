@@ -1,7 +1,7 @@
 """
 #
-#   PySCRDT - tune footprint maker 
-#
+#   Tune footprint maker based on PySCRDT module
+#   - author: Elias Waagaard 
 #   - adopted from fasvesta/PySCRDT and fasvesta/tune-spread into one single pip-installable package
 """
 import numpy as np
@@ -33,7 +33,7 @@ class tune_footprint_maker(object):
         self.Qh = Qh
         self.Qv = Qv
         if plot_range is None:
-            self.plot_range = [[Qh - 0.3, Qh + 0.3], [Qh - 0.3, Qh + 0.3]]   # range in Qh & Qv for the plot
+            self.plot_range = [[Qh - 0.3, Qh + 0.1], [Qh - 0.3, Qh + 0.1]]   # range in Qh & Qv for the plot
         else:
             self.plot_range = plot_range
         self.plot_order =  5   # order of resonances to plot
@@ -132,7 +132,7 @@ class tune_footprint_maker(object):
         self.p_collection_exists = True 
         
         
-    def generate_tune_footprint(self, fig, PySCRDT_object):
+    def generate_tune_footprint(self, fig, PySCRDT_object, return_fig_axis=False):
     
         if not self.p_collection_exists:
             self.make_polygons_for_footprint(PySCRDT_object)
@@ -142,16 +142,17 @@ class tune_footprint_maker(object):
         tune_diagram = resonance_lines(self.plot_range[0],
                     self.plot_range[1], np.arange(1, self.plot_order+1), self.periodicity)
         tune_diagram.plot_resonance(figure_object=fig, interactive=False)
-        #fig.suptitle('PS Pb ion', fontsize=22)
-        ax.plot(self.Qh, self.Qv, 'ro', markersize=12.5, alpha=0.7, label='Set tune')
+        ax.plot(self.Qh, self.Qv, 'ro', markersize=10.5, alpha=0.8, label='Set tune')
         ax.get_xaxis().get_major_formatter().set_useOffset(False)
         ax.get_yaxis().get_major_formatter().set_useOffset(False)
         ax.add_collection(self.p_collection)
         ax.set_aspect('equal')
-        ax.legend()
+        ax.legend(loc = "lower right")
         ax.set_ylabel(r'$Q_{y}$', fontsize=BIGGER_SIZE)
         ax.set_xlabel(r'$Q_{x}$', fontsize=BIGGER_SIZE)
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         #plt.savefig(input_parameters.figure, dpi=250)
         plt.show()
         
+        if return_fig_axis:
+            return ax
