@@ -52,3 +52,4 @@ print("\ndQx = {:.4f}, dQy = {:.4f}".format(dQx, dQy))
 #### Plot the tune footprint ####
 fig = plt.figure(figsize=(8, 8))
 PS_tune_footprint.generate_tune_footprint(fig, s)
+fig.savefig('output/PS_Pb_tune_footprint.png', dpi=250)
