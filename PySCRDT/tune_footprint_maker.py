@@ -65,6 +65,31 @@ class tune_footprint_maker(object):
         self.detuning = np.array(detuning)
         self.detuning_is_calculated = True 
     
+    
+    def return_max_detuning(self, PySCRDT_object):
+        """
+        Return maximum tune shift 
+
+        Parameters
+        ----------
+        PySCRDT_object 
+
+        Returns
+        -------
+        dQx : horizontal maximum detuning 
+        dQy : vertical maximum detuning 
+        """
+        if not self.detuning_is_calculated:
+            self.calculate_detuning_coefficients(PySCRDT_object)
+    
+        detuning_y=[i for i in np.where(self.detuning[:,1]==2)[0] if i in np.where(self.detuning[:,0]==0)[0]][0]
+        detuning_x=[i for i in np.where(self.detuning[:,0]==2)[0] if i in np.where(self.detuning[:,1]==0)[0]][0]
+        
+        dQx = self.detuning[detuning_x, 2]
+        dQy = self.detuning[detuning_y, 2]
+        
+        return dQx, dQy
+    
 
     def initial_xy_polar(self, s_max, s_N, theta_N):
         """

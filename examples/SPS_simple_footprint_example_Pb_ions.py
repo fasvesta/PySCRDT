@@ -45,6 +45,10 @@ s.loadTwissFromXsuite(twissTableXsuite=twiss_xtrack)
 #### Initiate tune footprint maker ####
 SPS_tune_footprint = tune_footprint_maker(Qh, Qv, plot_range = plot_range)
 
+#### Print maximum tune shift #### 
+dQx, dQy = SPS_tune_footprint.return_max_detuning(s)
+print("\ndQx = {:.4f}, dQy = {:.4f}".format(dQx, dQy))
+
 #### Plot the tune footprint ####
 fig = plt.figure(figsize=(8, 8))
 SPS_tune_footprint.generate_tune_footprint(fig, s)
