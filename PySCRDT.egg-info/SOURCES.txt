@@ -4,6 +4,7 @@ setup.py
 PySCRDT/PySCRDT.py
 PySCRDT/__init__.py
 PySCRDT/resonance_lines.py
+PySCRDT/tune_footprint_maker.py
 PySCRDT.egg-info/PKG-INFO
 PySCRDT.egg-info/SOURCES.txt
 PySCRDT.egg-info/dependency_links.txt

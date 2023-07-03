@@ -193,6 +193,8 @@ class tune_footprint_maker(object):
         ----------
         fig : matplotlib figure object
         PySCRDT_object 
+	Qx: horizontal tune data from particle tracking. Default: None
+	Qy: vertical tune data from particle tracking. Default: None
         return_fig_axis : default is False.
 
         Returns
@@ -217,7 +219,37 @@ class tune_footprint_maker(object):
         ax.set_ylabel(r'$Q_{y}$', fontsize=BIGGER_SIZE)
         ax.set_xlabel(r'$Q_{x}$', fontsize=BIGGER_SIZE)
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-        plt.show()
+        #plt.show()
         
         if return_fig_axis:
             return ax
+
+
+    def generate_tune_footprint_with_tracking_data(self, fig, PySCRDT_object, Qx, Qy):
+        """
+        Generate tune footprint figure from PySCRDT, also including tune data from tracking 
+
+        Parameters
+        ----------
+        fig : matplotlib figure object
+        PySCRDT_object 
+	Qx: horizontal tune data from particle tracking. Default: None
+	Qy: vertical tune data from particle tracking. Default: None
+        return_fig_axis : default is False.
+
+        Returns
+        -------
+        None
+        """
+    
+        if not self.p_collection_exists:
+            self.make_polygons_for_footprint(PySCRDT_object)
+       
+        # Generate analytical tune footprint
+        ax = self.generate_tune_footprint(fig, PySCRDT_object, return_fig_axis=True)
+
+        # Add tune footprint from tracking
+        ax.plot(Qx + int(self.Qh), Qy + int(self.Qv), 'go', markersize=4.5, alpha=0.2) 
+
+        plt.show()
+
