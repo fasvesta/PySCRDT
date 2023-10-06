@@ -3,8 +3,9 @@
 #
 #   PySCRDT
 #   A module to calculate the resonance driving terms from the space charge potential
-#
-#   Version : 1.0
+#   
+#   Version :   1.1 
+#               pre-calculated potentials for faster evaluation
 #   Author  : F. Asvesta
 #   Contact : fasvesta .at. cern .dot. ch
 #
@@ -20,9 +21,14 @@ try:
     import sympy as sy
 except ImportError:
     print("# PySCRDT : sympy module is required. ")
+try:
+    import dill
+except ImportError:
+    print("# PySCRDT : dill module is required. ")
 
-__version   = 1.0
-__PyVersion = ["2.7", "3.6+"]
+
+__version   = 1.1
+__PyVersion = ["2.7"]
 __author    = ["Foteini Asvesta"]
 __contact   = ["fasvesta .at. cern .dot. ch"]
 
@@ -229,7 +235,7 @@ class PySCRDT(object):
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
     
-    def potential(self, feedDown=False):
+    def potential(self, feedDown=False, lookUp=True):
         """
         Calculates the space charge potential for the given resonance order
         Inputs : feedDown : [bool] needed when single particle Dp/p non 0 (default=False)
@@ -240,41 +246,59 @@ class PySCRDT(object):
             self.n=self.j+self.k
         if (self.m is None) or (self.n is None):
             raise IOError('# PySCRDT::potential: You need to define resonance order in [setOrder]')
-        if self.m%2!=0 and feedDown==False:
+        if self.m%2!=0 and (feedDown==False):
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders without Dp/p (order given {}), change the order in [setOrder]'.format(str(self.m)))
         if self.n%2!=0:
             raise IOError('# PySCRDT::potential: Space charge potential contains only even orders (order given {}), change the order in [setOrder]'.format(str(self.n)))
-        V = (-1+sy.exp(-self.x**2/(self.t+2*self.a**2)-self.y**2/(self.t+2*self.b**2)))/sy.sqrt((self.t+2*self.a**2)*(self.t+2*self.b**2))
-        if self.m>self.n:
-            if feedDown:
-                p1 = sy.series(V, self.x, 0, abs(self.m)+2).removeO()
-            else:    
-                p1 = sy.series(V, self.x, 0, abs(self.m)+1).removeO()
-            p2 = sy.series(p1, self.y, 0, abs(self.n)+1).removeO()
-            termy = sy.collect(p2, self.y, evaluate=False)
-            termpowy=termy[self.y**abs(self.n)]
-            if feedDown:
-                termpowy=sy.expand(termpowy.subs(self.x,self.x+self.D))
-            termx = sy.collect(termpowy, self.x, evaluate=False)
-            termpowx=termx[self.x**abs(self.m)]
-            sterm=sy.simplify(termpowx)
-        else:
-            p1 = sy.series(V, self.y, 0, abs(self.n)+1).removeO()
-            if feedDown:
-                p2 = sy.series(p1, self.x, 0, abs(self.m)+2).removeO()
-            else:    
-                p2 = sy.series(p1, self.x, 0, abs(self.m)+1).removeO()
-            termx = sy.collect(p2, self.x, evaluate=False)
-            if feedDown:
-                termx=sy.expand(termx.subs(self.x,self.x+self.D))
-            termpowx=termx[self.x**abs(self.m)]
-            termy = sy.collect(termpowx, self.y, evaluate=False)
-            termpowy=termy[self.y**abs(self.n)]
-            sterm=sy.simplify(termpowy)
-        res = sy.integrate(sterm, (self.t, 0, sy.oo)).doit()
-        result=res.doit()
-        self.V = sy.simplify(result)
-        self.f=sy.lambdify((self.a,self.b,self.D),self.V)
+        if (self.m+self.n < 21) and (feedDown==False) and (lookUp==True):
+            try:
+                with open(__file__[:__file__.find('PySCRDT.py')]+'potentialsPy3','rb') as f:                                    
+                    a=dill.load(f)
+                a=np.array(a)
+                a=a[np.where(a[:,0]==self.m)[0]]
+                self.f=a[np.where(a[:,1]==self.n)][0][2]
+            except:
+                try:
+                    with open(__file__[:__file__.find('PySCRDT.py')]+'potentialsPy2','rb') as f:                                    
+                        a=dill.load(f)
+                    a=np.array(a)
+                    a=a[np.where(a[:,0]==self.m)[0]]
+                    self.f=a[np.where(a[:,1]==self.n)][0][2]
+                except:
+                    lookUp=False     
+                    print('# PySCRDT::potential: Calculating potential')  
+        if (self.m+self.n > 21) or (feedDown==True) or (lookUp==False):
+            V = (-1+sy.exp(-self.x**2/(self.t+2*self.a**2)-self.y**2/(self.t+2*self.b**2)))/sy.sqrt((self.t+2*self.a**2)*(self.t+2*self.b**2))
+            if self.m>self.n:
+                if feedDown:
+                    p1 = sy.series(V, self.x, 0, abs(self.m)+2).removeO()
+                else:    
+                    p1 = sy.series(V, self.x, 0, abs(self.m)+1).removeO()
+                p2 = sy.series(p1, self.y, 0, abs(self.n)+1).removeO()
+                termy = sy.collect(p2, self.y, evaluate=False)
+                termpowy=termy[self.y**abs(self.n)]
+                if feedDown:
+                    termpowy=sy.expand(termpowy.subs(self.x,self.x+self.D))
+                termx = sy.collect(termpowy, self.x, evaluate=False)
+                termpowx=termx[self.x**abs(self.m)]
+                sterm=sy.simplify(termpowx)
+            else:
+                p1 = sy.series(V, self.y, 0, abs(self.n)+1).removeO()
+                if feedDown:
+                    p2 = sy.series(p1, self.x, 0, abs(self.m)+2).removeO()
+                else:    
+                    p2 = sy.series(p1, self.x, 0, abs(self.m)+1).removeO()
+                termx = sy.collect(p2, self.x, evaluate=False)
+                if feedDown:
+                    termx=sy.expand(termx.subs(self.x,self.x+self.D))
+                termpowx=termx[self.x**abs(self.m)]
+                termy = sy.collect(termpowx, self.y, evaluate=False)
+                termpowy=termy[self.y**abs(self.n)]
+                sterm=sy.simplify(termpowy)
+            res = sy.integrate(sterm, (self.t, 0, sy.oo)).doit()
+            result=res.doit()
+            self.V = sy.simplify(result)
+            self.f=sy.lambdify((self.a,self.b,self.D),self.V)
         
     # - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - * - - *
 
@@ -339,7 +363,14 @@ class PySCRDT(object):
         header=np.genfromtxt(twissFile,skip_header=skip_header_nr,max_rows=1,dtype=str)   # 45 originally, below 47
         data=np.loadtxt(twissFile,skiprows=skip_rows_nr,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
         s = np.linspace(0,self.parameters['C'],100000)
-        data2=np.zeros((100000,8))
+        try:
+            data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1,np.where(header=='ALFX')[0][0]-1,np.where(header=='ALFY')[0][0]-1))
+            data2=np.zeros((100000,10))
+            data2[:,8] = np.interp(s,data[:,0],data[:,8])
+            data2[:,9] = np.interp(s,data[:,0],data[:,9])
+        except:
+            data=np.loadtxt(twissFile,skiprows=47,usecols=(np.where(header=='S')[0][0]-1,np.where(header=='BETX')[0][0]-1,np.where(header=='BETY')[0][0]-1,np.where(header=='DX')[0][0]-1,np.where(header=='DY')[0][0]-1,np.where(header=='MUX')[0][0]-1,np.where(header=='MUY')[0][0]-1,np.where(header=='L')[0][0]-1))
+            data2=np.zeros((100000,8))
         data2[:,1] = np.square(np.interp(s,data[:,0],np.sqrt(data[:,1])))
         data2[:,2] = np.square(np.interp(s,data[:,0],np.sqrt(data[:,2])))
         data2[:,3] = np.interp(s,data[:,0],self.parameters['b']*data[:,3])
@@ -365,8 +396,6 @@ class PySCRDT(object):
             raise IOError('# PySCRDT::loadTwissFromXsuite: You need to define Xsuite twiss table in [loadTwissFromXsuite]')
         if self.parameters is None:
             raise IOError('# PySCRDT::loadTwissFromXsuite: You need to define parameters in [setParameters]')
-        if not isinstance(twissTableXsuite, dict):
-            raise IOError('Twiss table must be X-track dictionary')
             
         # Define parameters from Twiss table
         self.parameters['g'] = twissTableXsuite['particle_on_co'].gamma0[0]
@@ -528,7 +557,7 @@ class PySCRDT(object):
         Returns: void
         """
         if kwargs is not None:
-            for key, value in kwargs.iteritems():
+            for key, value in kwargs.items():
                 if key not in self.parameters.keys():
                     raise IOError('# PySCRDT::updateParameters: '+key+' not recognized [checkWriting]')
                 else:
