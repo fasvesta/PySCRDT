@@ -19,15 +19,15 @@ line.build_tracker()
 twiss_xtrack = line.twiss() 
 
 #### PS default Pb beam settings #### 
-bunch_intensity = 2.0e8 
-sigma_z = 0.23
-nemitt_x= 1.3e-6
-nemitt_y= 0.9e-6 
+bunch_intensity = 2.6e8  # from BCT readout 
+sigma_z = 0.289
+nemitt_x= 1.18e-6
+nemitt_y= 0.88e-6 
 
 #### Analytical tune footprint settings ###
-Qh = twiss_xtrack['qx']
-Qv = twiss_xtrack['qy']
-plot_range  =   [[Qh - 0.4, Qh + 0.1], [Qh - 0.4, Qh + 0.1]]   # plot range in Qh & Qv, can be custom-provided to tune_footprint_maker
+Qh = 26.2  #twiss_xtrack['qx']
+Qv = 26.3 #twiss_xtrack['qy']
+plot_range  =   [[26.0, 26.5], [26.0, 26.5]]   # plot range in Qh & Qv, can be custom-provided to tune_footprint_maker
 
 #### Create instance of PySCRDT, taking beam parameters as input ####
 s = PySCRDT()
@@ -43,7 +43,7 @@ s.setParameters(
 s.loadTwissFromXsuite(twissTableXsuite=twiss_xtrack)
 
 #### Initiate tune footprint maker ####
-SPS_tune_footprint = tune_footprint_maker(Qh, Qv, plot_range = plot_range)
+SPS_tune_footprint = tune_footprint_maker(Qh, Qv, plot_range = plot_range, plot_order=4)
 
 #### Print maximum tune shift #### 
 dQx, dQy = SPS_tune_footprint.return_max_detuning(s)
