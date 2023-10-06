@@ -9,3 +9,4 @@ temp
 *.parquet
 *.txt
 *.sub
+*egg-info
