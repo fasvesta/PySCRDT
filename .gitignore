@@ -3,10 +3,12 @@
 *.o
 *.seq
 twiss*
-__pycache__
+*__pycache__*
 *.tfs
 temp
 *.parquet
 *.txt
 *.sub
 *egg-info
+*.pyc
+__pycache__/
